@@ -22,8 +22,8 @@ fn main() {
     assert_eq!(vec[1].a, 3);
     assert_eq!(vec[1].b, 4);
 
-    let (ptr, len, _) = vec.into_raw_parts();
-    let sum_fn = instance.get_typed_func::<(i32, i32), i32>(&mut store, "sum_vec").unwrap();
-    let sum = sum_fn.call(&mut store, (ptr, len as i32)).unwrap();
+    let (ptr, len, cap) = vec.into_raw_parts();
+    let sum_fn = instance.get_typed_func::<(i32, i32, i32), i32>(&mut store, "sum_vec").unwrap();
+    let sum = sum_fn.call(&mut store, (ptr, len as i32, cap as i32)).unwrap();
     assert_eq!(sum, 10);
 }

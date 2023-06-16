@@ -14,6 +14,7 @@ pub struct WasmVec<'a, T, S> {
     buf: RawVec<T>,
     store: &'a mut wasmtime::Store<S>,
     realloc: wasmtime::TypedFunc<(i32, i32, i32, i32), i32>,
+    free: wasmtime::TypedFunc<(i32, i32, i32), ()>,
     memory: wasmtime::Memory,
 }
 
@@ -25,6 +26,9 @@ impl<'a, T, S> WasmVec<'a, T, S> {
         let realloc = instance
             .get_typed_func::<(i32, i32, i32, i32), i32>(store.as_context_mut(), "canonical_abi_realloc")
             .unwrap();
+        let free = instance
+            .get_typed_func::<(i32, i32, i32), ()>(store.as_context_mut(), "canonical_abi_free")
+            .unwrap();
         let memory = instance.get_memory(store.as_context_mut(), "memory").unwrap();
         Self {
             buf: RawVec {
@@ -34,6 +38,7 @@ impl<'a, T, S> WasmVec<'a, T, S> {
                 _marker: std::marker::PhantomData,
             },
             realloc,
+            free,
             store,
             memory,
         }
@@ -100,5 +105,16 @@ impl<'a, T, S> DerefMut for WasmVec<'a, T, S> {
                 self.buf.len as usize,
             )
         }
+    }
+}
+
+impl<'a, T, S> Drop for WasmVec<'a, T, S> {
+    fn drop(&mut self) {
+        self.free.call(
+            self.store.as_context_mut(),
+            (self.buf.ptr,
+            self.buf.cap as i32,
+            std::alloc::Layout::array::<T>(self.buf.cap.try_into().unwrap()).unwrap().align().try_into().unwrap())
+        ).unwrap();
     }
 }

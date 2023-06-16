@@ -22,12 +22,9 @@ extern "C" fn canonical_abi_free(ptr: usize, old_size: usize, align: usize) {
 }
 
 #[no_mangle]
-extern "C" fn sum_vec(vec: *mut TwoNumbs, len: usize) -> i32 {
-    let mut sum = 0;
-    for i in 0..len {
-        let item = unsafe { *vec.add(i) };
-        sum += item.a + item.b;
-    }
+extern "C" fn sum_vec(vec: *mut TwoNumbs, len: usize, cap: usize) -> i32 {
+    let vec = unsafe { std::vec::Vec::from_raw_parts(vec, len, cap) };
+    let sum = vec.iter().fold(0, |acc, x| acc + x.a + x.b);
     sum
 }
 
